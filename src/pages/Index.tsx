@@ -56,6 +56,9 @@ const Index = () => {
           </div>
         </div>
 
+        {/* World Map */}
+        <WorldMap />
+
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <VelocityChart />
