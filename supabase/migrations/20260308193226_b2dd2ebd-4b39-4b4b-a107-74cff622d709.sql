@@ -1,0 +1,1 @@
+ALTER TABLE public.experiments DROP CONSTRAINT experiments_status_check;
