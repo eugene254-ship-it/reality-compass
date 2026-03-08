@@ -9,7 +9,18 @@ export type Experiment = Tables<"experiments">;
 export const useKnowledgeNodes = () => {
   const queryClient = useQueryClient();
 
-  // Subscribe to realtime changes
+  const query = useQuery({
+    queryKey: ["knowledge_nodes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("knowledge_nodes")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as KnowledgeNode[];
+    },
+  });
+
   useEffect(() => {
     const channel = supabase
       .channel("knowledge_nodes_realtime")
@@ -27,17 +38,8 @@ export const useKnowledgeNodes = () => {
     };
   }, [queryClient]);
 
-  return useQuery({
-    queryKey: ["knowledge_nodes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("knowledge_nodes")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data as KnowledgeNode[];
-    },
-  });
+
+  return query;
 };
 
 export const useAllKnowledgeNodes = () => {
