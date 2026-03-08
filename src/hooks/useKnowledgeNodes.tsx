@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -6,6 +7,26 @@ export type KnowledgeNode = Tables<"knowledge_nodes">;
 export type Experiment = Tables<"experiments">;
 
 export const useKnowledgeNodes = () => {
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("knowledge_nodes_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "knowledge_nodes" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["knowledge_nodes"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["knowledge_nodes"],
     queryFn: async () => {
@@ -13,6 +34,20 @@ export const useKnowledgeNodes = () => {
         .from("knowledge_nodes")
         .select("*")
         .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as KnowledgeNode[];
+    },
+  });
+};
+
+export const useAllKnowledgeNodes = () => {
+  return useQuery({
+    queryKey: ["knowledge_nodes_all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("knowledge_nodes")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as KnowledgeNode[];
     },
@@ -63,5 +98,42 @@ export const useSubmitNode = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge_nodes"] });
     },
+  });
+};
+
+export const useUpdateNodeStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { data, error } = await supabase
+        .from("knowledge_nodes")
+        .update({ status })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge_nodes"] });
+      queryClient.invalidateQueries({ queryKey: ["knowledge_nodes_all"] });
+    },
+  });
+};
+
+export const useUserRole = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ["user_role", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.role ?? null;
+    },
+    enabled: !!userId,
   });
 };
