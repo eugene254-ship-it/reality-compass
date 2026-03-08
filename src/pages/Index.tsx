@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Globe, Brain, Zap, Activity, Satellite, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -7,14 +8,21 @@ import RegionalInnovation from "@/components/dashboard/RegionalInnovation";
 import EvidenceLayers from "@/components/dashboard/EvidenceLayers";
 import AdoptionPipeline from "@/components/dashboard/AdoptionPipeline";
 import WorldMap from "@/components/dashboard/WorldMap";
+import SearchBar from "@/components/dashboard/SearchBar";
 
 const Index = () => {
+  const [searchMatchIds, setSearchMatchIds] = useState<string[]>([]);
+
+  const handleFilter = useCallback((ids: string[]) => {
+    setSearchMatchIds(ids);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center glow-primary">
               <Globe className="w-4 h-4 text-primary" />
             </div>
@@ -23,7 +31,8 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Knowledge Evolution Dashboard</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <SearchBar onFilter={handleFilter} />
+          <div className="flex items-center gap-2 shrink-0">
             <motion.div
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -49,7 +58,7 @@ const Index = () => {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3">
-            <KnowledgeGraph />
+            <KnowledgeGraph highlightIds={searchMatchIds.length > 0 ? searchMatchIds : undefined} />
           </div>
           <div className="lg:col-span-2">
             <EvidenceLayers />
