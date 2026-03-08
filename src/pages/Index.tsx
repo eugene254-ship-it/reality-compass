@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useKnowledgeNodes, useSubmitNode } from "@/hooks/useKnowledgeNodes";
 
+// Force clean HMR reload
 const Index = () => {
   const [searchMatchIds, setSearchMatchIds] = useState<string[]>([]);
   const [activeStages, setActiveStages] = useState<NodeStage[]>([]);
