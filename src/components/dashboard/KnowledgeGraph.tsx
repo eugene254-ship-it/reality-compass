@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import KnowledgeNode, { NodeStage } from "./KnowledgeNode";
 import NodeDetailCard from "./NodeDetailCard";
+import type { KnowledgeNode as DBNode } from "@/hooks/useKnowledgeNodes";
 
 interface GraphNode {
   id: string;
@@ -17,51 +18,85 @@ interface GraphEdge {
   to: string;
 }
 
-export const knowledgeNodes: GraphNode[] = [
-  { id: "regen-ag", x: 300, y: 160, size: 18, stage: "validated", label: "Regenerative Agriculture" },
-  { id: "soil-carbon", x: 200, y: 100, size: 12, stage: "pilot", label: "Soil Carbon Capture" },
-  { id: "drought-crop", x: 420, y: 100, size: 14, stage: "validated", label: "Drought-Resistant Crops" },
-  { id: "flood-mit", x: 520, y: 200, size: 16, stage: "pilot", label: "Flood Mitigation" },
-  { id: "water-harvest", x: 140, y: 220, size: 10, stage: "global", label: "Water Harvesting" },
-  { id: "bio-pest", x: 380, y: 260, size: 8, stage: "theory", label: "Biopesticide Research" },
-  { id: "solar-irr", x: 500, y: 300, size: 11, stage: "pilot", label: "Solar Irrigation" },
-  { id: "health-del", x: 100, y: 320, size: 15, stage: "validated", label: "Health Delivery Models" },
-  { id: "mrna-dist", x: 220, y: 350, size: 9, stage: "theory", label: "mRNA Distribution" },
-  { id: "renew-grid", x: 460, y: 380, size: 17, stage: "global", label: "Renewable Grid Systems" },
-  { id: "micro-grid", x: 340, y: 400, size: 13, stage: "validated", label: "Micro-Grid Networks" },
-  { id: "carbon-seq", x: 80, y: 160, size: 7, stage: "theory", label: "Carbon Sequestration" },
+// Static positions for known seed nodes
+const staticPositions: Record<string, { x: number; y: number; size: number }> = {
+  "a1000000-0000-0000-0000-000000000001": { x: 300, y: 160, size: 18 },
+  "a1000000-0000-0000-0000-000000000002": { x: 200, y: 100, size: 12 },
+  "a1000000-0000-0000-0000-000000000003": { x: 420, y: 100, size: 14 },
+  "a1000000-0000-0000-0000-000000000004": { x: 520, y: 200, size: 16 },
+  "a1000000-0000-0000-0000-000000000005": { x: 140, y: 220, size: 10 },
+  "a1000000-0000-0000-0000-000000000006": { x: 380, y: 260, size: 8 },
+  "a1000000-0000-0000-0000-000000000007": { x: 500, y: 300, size: 11 },
+  "a1000000-0000-0000-0000-000000000008": { x: 100, y: 320, size: 15 },
+  "a1000000-0000-0000-0000-000000000009": { x: 220, y: 350, size: 9 },
+  "a1000000-0000-0000-0000-000000000010": { x: 460, y: 380, size: 17 },
+  "a1000000-0000-0000-0000-000000000011": { x: 340, y: 400, size: 13 },
+  "a1000000-0000-0000-0000-000000000012": { x: 80, y: 160, size: 7 },
+};
+
+// Static edges between seed nodes
+const seedEdges: GraphEdge[] = [
+  { from: "a1000000-0000-0000-0000-000000000001", to: "a1000000-0000-0000-0000-000000000002" },
+  { from: "a1000000-0000-0000-0000-000000000001", to: "a1000000-0000-0000-0000-000000000003" },
+  { from: "a1000000-0000-0000-0000-000000000001", to: "a1000000-0000-0000-0000-000000000006" },
+  { from: "a1000000-0000-0000-0000-000000000002", to: "a1000000-0000-0000-0000-000000000012" },
+  { from: "a1000000-0000-0000-0000-000000000005", to: "a1000000-0000-0000-0000-000000000001" },
+  { from: "a1000000-0000-0000-0000-000000000004", to: "a1000000-0000-0000-0000-000000000007" },
+  { from: "a1000000-0000-0000-0000-000000000008", to: "a1000000-0000-0000-0000-000000000009" },
+  { from: "a1000000-0000-0000-0000-000000000010", to: "a1000000-0000-0000-0000-000000000011" },
+  { from: "a1000000-0000-0000-0000-000000000010", to: "a1000000-0000-0000-0000-000000000007" },
+  { from: "a1000000-0000-0000-0000-000000000005", to: "a1000000-0000-0000-0000-000000000008" },
 ];
 
-export const knowledgeEdges: GraphEdge[] = [
-  { from: "regen-ag", to: "soil-carbon" },
-  { from: "regen-ag", to: "drought-crop" },
-  { from: "regen-ag", to: "bio-pest" },
-  { from: "soil-carbon", to: "carbon-seq" },
-  { from: "water-harvest", to: "regen-ag" },
-  { from: "flood-mit", to: "solar-irr" },
-  { from: "health-del", to: "mrna-dist" },
-  { from: "renew-grid", to: "micro-grid" },
-  { from: "renew-grid", to: "solar-irr" },
-  { from: "water-harvest", to: "health-del" },
-];
-
-const nodeMap = Object.fromEntries(knowledgeNodes.map((n) => [n.id, n]));
-
-// Build adjacency for highlighting related nodes
-const adjacency: Record<string, Set<string>> = {};
-knowledgeNodes.forEach((n) => (adjacency[n.id] = new Set()));
-knowledgeEdges.forEach((e) => {
-  adjacency[e.from].add(e.to);
-  adjacency[e.to].add(e.from);
-});
+function hashPosition(id: string, index: number): { x: number; y: number } {
+  // Deterministic pseudo-random position from id
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  const x = 60 + Math.abs(hash % 480);
+  const y = 60 + Math.abs((hash * 31 + index * 97) % 340);
+  return { x, y };
+}
 
 interface KnowledgeGraphProps {
   highlightIds?: string[];
   activeStages?: NodeStage[];
+  dbNodes?: DBNode[];
 }
 
-const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps) => {
+const KnowledgeGraph = ({ highlightIds, activeStages = [], dbNodes = [] }: KnowledgeGraphProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const graphNodes: GraphNode[] = useMemo(() => {
+    return dbNodes.map((n, i) => {
+      const pos = staticPositions[n.id] || hashPosition(n.id, i);
+      return {
+        id: n.id,
+        x: pos.x,
+        y: pos.y,
+        size: staticPositions[n.id]?.size ?? 10,
+        stage: n.stage as NodeStage,
+        label: n.label,
+      };
+    });
+  }, [dbNodes]);
+
+  const nodeMap = useMemo(() => Object.fromEntries(graphNodes.map((n) => [n.id, n])), [graphNodes]);
+
+  // Only use edges where both endpoints exist
+  const edges = useMemo(() => {
+    const nodeIds = new Set(graphNodes.map((n) => n.id));
+    return seedEdges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
+  }, [graphNodes]);
+
+  const adjacency = useMemo(() => {
+    const adj: Record<string, Set<string>> = {};
+    graphNodes.forEach((n) => (adj[n.id] = new Set()));
+    edges.forEach((e) => {
+      adj[e.from]?.add(e.to);
+      adj[e.to]?.add(e.from);
+    });
+    return adj;
+  }, [graphNodes, edges]);
 
   const getRelatedSet = (): Set<string> | null => {
     if (selectedId) {
@@ -69,12 +104,8 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps
       adjacency[selectedId]?.forEach((id) => set.add(id));
       return set;
     }
-    if (highlightIds && highlightIds.length > 0) {
-      return new Set(highlightIds);
-    }
-    if (activeStages.length > 0) {
-      return new Set(knowledgeNodes.filter((n) => activeStages.includes(n.stage)).map((n) => n.id));
-    }
+    if (highlightIds && highlightIds.length > 0) return new Set(highlightIds);
+    if (activeStages.length > 0) return new Set(graphNodes.filter((n) => activeStages.includes(n.stage)).map((n) => n.id));
     return null;
   };
 
@@ -86,18 +117,18 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps
       <div className="px-6 pt-5 pb-2 relative z-10">
         <h2 className="text-lg font-semibold text-foreground">Knowledge Network</h2>
         <p className="text-sm text-muted-foreground">
-          {selectedId ? "Click node to explore — showing related cluster" : "Click any node to explore its evidence and experiments"}
+          {graphNodes.length === 0
+            ? "Loading nodes from database..."
+            : selectedId
+            ? "Click node to explore — showing related cluster"
+            : "Click any node to explore its evidence and experiments"}
         </p>
       </div>
-      <svg
-        viewBox="0 0 600 450"
-        className="w-full h-auto relative z-10"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Edges */}
-        {knowledgeEdges.map((edge, i) => {
+      <svg viewBox="0 0 600 450" className="w-full h-auto relative z-10" preserveAspectRatio="xMidYMid meet">
+        {edges.map((edge, i) => {
           const from = nodeMap[edge.from];
           const to = nodeMap[edge.to];
+          if (!from || !to) return null;
           const isHighlighted = relatedSet ? relatedSet.has(edge.from) && relatedSet.has(edge.to) : true;
           return (
             <motion.line
@@ -114,8 +145,7 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps
             />
           );
         })}
-        {/* Nodes */}
-        {knowledgeNodes.map((node, i) => (
+        {graphNodes.map((node, i) => (
           <KnowledgeNode
             key={node.id}
             {...node}
@@ -126,7 +156,6 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps
           />
         ))}
       </svg>
-      {/* Legend */}
       <div className="flex gap-5 px-6 pb-5 relative z-10">
         {(["theory", "pilot", "validated", "global"] as const).map((stage) => (
           <div key={stage} className="flex items-center gap-2">
@@ -137,11 +166,7 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps
           </div>
         ))}
       </div>
-
-      {/* Detail Card */}
-      {selectedId && (
-        <NodeDetailCard nodeId={selectedId} onClose={() => setSelectedId(null)} />
-      )}
+      {selectedId && <NodeDetailCard nodeId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   );
 };
