@@ -38,7 +38,9 @@ export const useKnowledgeNodes = () => {
     };
   }, [queryClient]);
 
-  return useQuery({
+
+  return query;
+};
     queryKey: ["knowledge_nodes"],
     queryFn: async () => {
       const { data, error } = await supabase
