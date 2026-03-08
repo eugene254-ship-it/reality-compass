@@ -57,9 +57,10 @@ knowledgeEdges.forEach((e) => {
 
 interface KnowledgeGraphProps {
   highlightIds?: string[];
+  activeStages?: NodeStage[];
 }
 
-const KnowledgeGraph = ({ highlightIds }: KnowledgeGraphProps) => {
+const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const getRelatedSet = (): Set<string> | null => {
