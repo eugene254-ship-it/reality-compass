@@ -41,17 +41,6 @@ export const useKnowledgeNodes = () => {
 
   return query;
 };
-    queryKey: ["knowledge_nodes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("knowledge_nodes")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data as KnowledgeNode[];
-    },
-  });
-};
 
 export const useAllKnowledgeNodes = () => {
   return useQuery({
