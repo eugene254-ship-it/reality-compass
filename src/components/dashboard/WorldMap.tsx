@@ -211,7 +211,7 @@ const WorldMap = ({ activeStages = [] }: WorldMapProps) => {
           />
 
           {/* Hotspot glows and points */}
-          {hotspots.map((spot, i) => {
+          {filteredHotspots.map((spot, i) => {
             const color = stageColors[spot.stage];
             const isSelected = selected?.id === spot.id;
             return (

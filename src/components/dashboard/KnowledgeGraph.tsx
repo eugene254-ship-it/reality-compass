@@ -72,6 +72,9 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [] }: KnowledgeGraphProps
     if (highlightIds && highlightIds.length > 0) {
       return new Set(highlightIds);
     }
+    if (activeStages.length > 0) {
+      return new Set(knowledgeNodes.filter((n) => activeStages.includes(n.stage)).map((n) => n.id));
+    }
     return null;
   };
 

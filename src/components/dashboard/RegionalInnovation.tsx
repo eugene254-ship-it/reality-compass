@@ -77,7 +77,7 @@ const RegionalInnovation = ({ activeStages = [] }: RegionalInnovationProps) => {
         <p className="text-sm text-muted-foreground">Grassroots breakthroughs verified by satellite evidence</p>
       </div>
       <div className="space-y-4">
-        {innovations.map((item, i) => {
+        {filtered.map((item, i) => {
           const Icon = item.icon;
           return (
             <motion.div
