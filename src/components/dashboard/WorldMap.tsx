@@ -132,7 +132,14 @@ const WORLD_PATH =
   "M140,95 L150,90 160,88 170,90 180,95 190,100 200,105 210,108 220,105 230,100 240,95 250,90 260,88 270,90 275,95 " +
   "M330,142 L338,148 345,152 350,158 355,162 362,165 368,170 375,172 380,170 388,165 395,160 400,155 408,150 415,148 422,150 428,155 435,158 440,155 445,150 ";
 
-const WorldMap = () => {
+interface WorldMapProps {
+  activeStages?: ("theory" | "pilot" | "validated" | "global")[];
+}
+
+const WorldMap = ({ activeStages = [] }: WorldMapProps) => {
+  const filteredHotspots = activeStages.length > 0
+    ? hotspots.filter((h) => activeStages.includes(h.stage))
+    : hotspots;
   const [selected, setSelected] = useState<Hotspot | null>(null);
 
   return (
@@ -204,7 +211,7 @@ const WorldMap = () => {
           />
 
           {/* Hotspot glows and points */}
-          {hotspots.map((spot, i) => {
+          {filteredHotspots.map((spot, i) => {
             const color = stageColors[spot.stage];
             const isSelected = selected?.id === spot.id;
             return (

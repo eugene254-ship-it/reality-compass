@@ -57,7 +57,14 @@ const stageLabels: Record<string, string> = {
   global: "Global Adoption",
 };
 
-const RegionalInnovation = () => {
+interface RegionalInnovationProps {
+  activeStages?: ("theory" | "pilot" | "validated" | "global")[];
+}
+
+const RegionalInnovation = ({ activeStages = [] }: RegionalInnovationProps) => {
+  const filtered = activeStages.length > 0
+    ? innovations.filter((i) => activeStages.includes(i.stage))
+    : innovations;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -70,7 +77,7 @@ const RegionalInnovation = () => {
         <p className="text-sm text-muted-foreground">Grassroots breakthroughs verified by satellite evidence</p>
       </div>
       <div className="space-y-4">
-        {innovations.map((item, i) => {
+        {filtered.map((item, i) => {
           const Icon = item.icon;
           return (
             <motion.div
