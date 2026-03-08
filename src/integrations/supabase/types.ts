@@ -14,7 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      experiments: {
+        Row: {
+          created_at: string
+          id: string
+          location: string
+          node_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location?: string
+          node_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location?: string
+          node_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiments_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_nodes: {
+        Row: {
+          created_at: string
+          credibility: number | null
+          description: string
+          evidence_links: string[] | null
+          id: string
+          impact: number | null
+          label: string
+          stage: Database["public"]["Enums"]["node_stage"]
+          status: string
+          submitted_by: string | null
+          updated_at: string
+          validation: number | null
+        }
+        Insert: {
+          created_at?: string
+          credibility?: number | null
+          description?: string
+          evidence_links?: string[] | null
+          id?: string
+          impact?: number | null
+          label: string
+          stage?: Database["public"]["Enums"]["node_stage"]
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          validation?: number | null
+        }
+        Update: {
+          created_at?: string
+          credibility?: number | null
+          description?: string
+          evidence_links?: string[] | null
+          id?: string
+          impact?: number | null
+          label?: string
+          stage?: Database["public"]["Enums"]["node_stage"]
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          validation?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +102,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      node_stage: "theory" | "pilot" | "validated" | "global"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +229,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      node_stage: ["theory", "pilot", "validated", "global"],
+    },
   },
 } as const
