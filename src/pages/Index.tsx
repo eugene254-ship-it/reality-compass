@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Globe, Brain, Zap, Satellite, BookOpen, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import ThemeToggle from "@/components/ThemeToggle";
 import MetricCard from "@/components/dashboard/MetricCard";
 import KnowledgeGraph from "@/components/dashboard/KnowledgeGraph";
 import VelocityChart from "@/components/dashboard/VelocityChart";
