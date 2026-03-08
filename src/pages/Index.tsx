@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Globe, Brain, Zap, Activity, Satellite, BookOpen } from "lucide-react";
+import { Globe, Brain, Zap, Satellite, BookOpen, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import MetricCard from "@/components/dashboard/MetricCard";
 import KnowledgeGraph from "@/components/dashboard/KnowledgeGraph";
@@ -9,13 +9,26 @@ import EvidenceLayers from "@/components/dashboard/EvidenceLayers";
 import AdoptionPipeline from "@/components/dashboard/AdoptionPipeline";
 import WorldMap from "@/components/dashboard/WorldMap";
 import SearchBar from "@/components/dashboard/SearchBar";
+import StageFilter from "@/components/dashboard/StageFilter";
+import SubmitNodeModal from "@/components/dashboard/SubmitNodeModal";
+import type { NodeStage } from "@/components/dashboard/KnowledgeNode";
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [searchMatchIds, setSearchMatchIds] = useState<string[]>([]);
+  const [activeStages, setActiveStages] = useState<NodeStage[]>([]);
+  const [submitOpen, setSubmitOpen] = useState(false);
 
   const handleFilter = useCallback((ids: string[]) => {
     setSearchMatchIds(ids);
   }, []);
+
+  const handleSubmitNode = (node: { label: string; description: string; stage: NodeStage; evidenceLinks: string[] }) => {
+    toast({
+      title: "Node submitted",
+      description: `"${node.label}" has been submitted for review.`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,18 +45,30 @@ const Index = () => {
             </div>
           </div>
           <SearchBar onFilter={handleFilter} />
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setSubmitOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Submit
+            </button>
             <motion.div
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
               className="w-2 h-2 rounded-full bg-stage-validated"
             />
-            <span className="text-xs text-muted-foreground">Live Monitoring</span>
+            <span className="text-xs text-muted-foreground">Live</span>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Stage Filter */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <StageFilter activeStages={activeStages} onChange={setActiveStages} />
+        </div>
+
         {/* Hero Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard icon={Brain} label="Active Ideas" value="3,717" change="+142 this month" delay={0} />
@@ -58,7 +83,10 @@ const Index = () => {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3">
-            <KnowledgeGraph highlightIds={searchMatchIds.length > 0 ? searchMatchIds : undefined} />
+            <KnowledgeGraph
+              highlightIds={searchMatchIds.length > 0 ? searchMatchIds : undefined}
+              activeStages={activeStages}
+            />
           </div>
           <div className="lg:col-span-2">
             <EvidenceLayers />
@@ -66,12 +94,12 @@ const Index = () => {
         </div>
 
         {/* World Map */}
-        <WorldMap />
+        <WorldMap activeStages={activeStages} />
 
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <VelocityChart />
-          <RegionalInnovation />
+          <RegionalInnovation activeStages={activeStages} />
         </div>
 
         {/* Footer */}
@@ -81,6 +109,8 @@ const Index = () => {
           </p>
         </footer>
       </main>
+
+      <SubmitNodeModal open={submitOpen} onClose={() => setSubmitOpen(false)} onSubmit={handleSubmitNode} />
     </div>
   );
 };
