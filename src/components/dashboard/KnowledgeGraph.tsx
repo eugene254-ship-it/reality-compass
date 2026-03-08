@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import KnowledgeNode, { NodeStage } from "./KnowledgeNode";
+import NodeDetailCard from "./NodeDetailCard";
 
 interface GraphNode {
   id: string;
@@ -15,7 +17,7 @@ interface GraphEdge {
   to: string;
 }
 
-const nodes: GraphNode[] = [
+export const knowledgeNodes: GraphNode[] = [
   { id: "regen-ag", x: 300, y: 160, size: 18, stage: "validated", label: "Regenerative Agriculture" },
   { id: "soil-carbon", x: 200, y: 100, size: 12, stage: "pilot", label: "Soil Carbon Capture" },
   { id: "drought-crop", x: 420, y: 100, size: 14, stage: "validated", label: "Drought-Resistant Crops" },
@@ -30,7 +32,7 @@ const nodes: GraphNode[] = [
   { id: "carbon-seq", x: 80, y: 160, size: 7, stage: "theory", label: "Carbon Sequestration" },
 ];
 
-const edges: GraphEdge[] = [
+export const knowledgeEdges: GraphEdge[] = [
   { from: "regen-ag", to: "soil-carbon" },
   { from: "regen-ag", to: "drought-crop" },
   { from: "regen-ag", to: "bio-pest" },
@@ -43,15 +45,45 @@ const edges: GraphEdge[] = [
   { from: "water-harvest", to: "health-del" },
 ];
 
-const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
+const nodeMap = Object.fromEntries(knowledgeNodes.map((n) => [n.id, n]));
 
-const KnowledgeGraph = () => {
+// Build adjacency for highlighting related nodes
+const adjacency: Record<string, Set<string>> = {};
+knowledgeNodes.forEach((n) => (adjacency[n.id] = new Set()));
+knowledgeEdges.forEach((e) => {
+  adjacency[e.from].add(e.to);
+  adjacency[e.to].add(e.from);
+});
+
+interface KnowledgeGraphProps {
+  highlightIds?: string[];
+}
+
+const KnowledgeGraph = ({ highlightIds }: KnowledgeGraphProps) => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const getRelatedSet = (): Set<string> | null => {
+    if (selectedId) {
+      const set = new Set<string>([selectedId]);
+      adjacency[selectedId]?.forEach((id) => set.add(id));
+      return set;
+    }
+    if (highlightIds && highlightIds.length > 0) {
+      return new Set(highlightIds);
+    }
+    return null;
+  };
+
+  const relatedSet = getRelatedSet();
+
   return (
     <div className="relative w-full rounded-lg border border-border card-gradient overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-20" />
       <div className="px-6 pt-5 pb-2 relative z-10">
         <h2 className="text-lg font-semibold text-foreground">Knowledge Network</h2>
-        <p className="text-sm text-muted-foreground">Live evolution of solution clusters</p>
+        <p className="text-sm text-muted-foreground">
+          {selectedId ? "Click node to explore — showing related cluster" : "Click any node to explore its evidence and experiments"}
+        </p>
       </div>
       <svg
         viewBox="0 0 600 450"
@@ -59,9 +91,10 @@ const KnowledgeGraph = () => {
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Edges */}
-        {edges.map((edge, i) => {
+        {knowledgeEdges.map((edge, i) => {
           const from = nodeMap[edge.from];
           const to = nodeMap[edge.to];
+          const isHighlighted = relatedSet ? relatedSet.has(edge.from) && relatedSet.has(edge.to) : true;
           return (
             <motion.line
               key={i}
@@ -69,17 +102,24 @@ const KnowledgeGraph = () => {
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              stroke="hsl(210, 30%, 25%)"
-              strokeWidth={1}
+              stroke={isHighlighted ? "hsl(210, 50%, 40%)" : "hsl(210, 30%, 25%)"}
+              strokeWidth={isHighlighted ? 1.5 : 1}
               initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 0.5 }}
+              animate={{ pathLength: 1, opacity: isHighlighted ? 0.7 : 0.15 }}
               transition={{ duration: 1, delay: i * 0.08 }}
             />
           );
         })}
         {/* Nodes */}
-        {nodes.map((node, i) => (
-          <KnowledgeNode key={node.id} {...node} delay={i * 0.1} />
+        {knowledgeNodes.map((node, i) => (
+          <KnowledgeNode
+            key={node.id}
+            {...node}
+            delay={i * 0.1}
+            isSelected={selectedId === node.id}
+            isDimmed={relatedSet ? !relatedSet.has(node.id) : false}
+            onClick={() => setSelectedId(selectedId === node.id ? null : node.id)}
+          />
         ))}
       </svg>
       {/* Legend */}
@@ -87,10 +127,17 @@ const KnowledgeGraph = () => {
         {(["theory", "pilot", "validated", "global"] as const).map((stage) => (
           <div key={stage} className="flex items-center gap-2">
             <span className={`w-2.5 h-2.5 rounded-full bg-stage-${stage}`} />
-            <span className="text-xs text-muted-foreground capitalize">{stage === "global" ? "Global Adoption" : stage === "validated" ? "Field Validated" : stage === "pilot" ? "Pilot Testing" : "Theoretical"}</span>
+            <span className="text-xs text-muted-foreground capitalize">
+              {stage === "global" ? "Global Adoption" : stage === "validated" ? "Field Validated" : stage === "pilot" ? "Pilot Testing" : "Theoretical"}
+            </span>
           </div>
         ))}
       </div>
+
+      {/* Detail Card */}
+      {selectedId && (
+        <NodeDetailCard nodeId={selectedId} onClose={() => setSelectedId(null)} />
+      )}
     </div>
   );
 };
