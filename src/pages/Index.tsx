@@ -6,6 +6,7 @@ import VelocityChart from "@/components/dashboard/VelocityChart";
 import RegionalInnovation from "@/components/dashboard/RegionalInnovation";
 import EvidenceLayers from "@/components/dashboard/EvidenceLayers";
 import AdoptionPipeline from "@/components/dashboard/AdoptionPipeline";
+import WorldMap from "@/components/dashboard/WorldMap";
 
 const Index = () => {
   return (
