@@ -84,6 +84,15 @@ const Index = () => {
           <SearchBar onFilter={handleFilter} nodes={nodes} />
           <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle />
+            {role === "admin" && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted text-muted-foreground text-xs font-medium hover:text-foreground transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Admin
+              </button>
+            )}
             <button
               onClick={handleSubmitClick}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
