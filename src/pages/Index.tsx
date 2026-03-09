@@ -151,6 +151,7 @@ const Index = () => {
               highlightIds={searchMatchIds.length > 0 ? searchMatchIds : undefined}
               activeStages={activeStages}
               dbNodes={nodes}
+              dbEdges={edges}
             />
           </div>
           <div className="lg:col-span-2">
