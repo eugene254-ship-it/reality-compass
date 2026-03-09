@@ -94,6 +94,48 @@ export type Database = {
         }
         Relationships: []
       }
+      node_edges: {
+        Row: {
+          created_at: string
+          from_node_id: string
+          id: string
+          relationship_type: string
+          strength: number
+          to_node_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_node_id: string
+          id?: string
+          relationship_type?: string
+          strength?: number
+          to_node_id: string
+        }
+        Update: {
+          created_at?: string
+          from_node_id?: string
+          id?: string
+          relationship_type?: string
+          strength?: number
+          to_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_edges_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_edges_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

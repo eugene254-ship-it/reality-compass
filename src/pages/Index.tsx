@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Globe, Brain, Zap, Satellite, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
+import { Globe, Brain, Zap, Satellite, BookOpen, Plus, LogIn, LogOut, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -16,9 +16,8 @@ import SubmitNodeModal from "@/components/dashboard/SubmitNodeModal";
 import type { NodeStage } from "@/components/dashboard/KnowledgeNode";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useKnowledgeNodes, useSubmitNode } from "@/hooks/useKnowledgeNodes";
+import { useKnowledgeNodes, useSubmitNode, useNodeEdges, useUserRole } from "@/hooks/useKnowledgeNodes";
 
-// Force clean HMR reload
 const Index = () => {
   const [searchMatchIds, setSearchMatchIds] = useState<string[]>([]);
   const [activeStages, setActiveStages] = useState<NodeStage[]>([]);
@@ -26,6 +25,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: nodes = [] } = useKnowledgeNodes();
+  const { data: edges = [] } = useNodeEdges();
+  const { data: role } = useUserRole(user?.id);
   const submitNode = useSubmitNode();
 
   const handleFilter = useCallback((ids: string[]) => {
@@ -83,6 +84,15 @@ const Index = () => {
           <SearchBar onFilter={handleFilter} nodes={nodes} />
           <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle />
+            {role === "admin" && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted text-muted-foreground text-xs font-medium hover:text-foreground transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Admin
+              </button>
+            )}
             <button
               onClick={handleSubmitClick}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
@@ -141,6 +151,7 @@ const Index = () => {
               highlightIds={searchMatchIds.length > 0 ? searchMatchIds : undefined}
               activeStages={activeStages}
               dbNodes={nodes}
+              dbEdges={edges}
             />
           </div>
           <div className="lg:col-span-2">

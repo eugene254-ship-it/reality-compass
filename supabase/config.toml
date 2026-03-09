@@ -1,1 +1,7 @@
 project_id = "nbuyrmirsdwunaujhcoo"
+
+[functions.validate-evidence]
+verify_jwt = false
+
+[functions.calculate-impact]
+verify_jwt = false

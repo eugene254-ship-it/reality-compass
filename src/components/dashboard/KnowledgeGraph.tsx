@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import KnowledgeNode, { NodeStage } from "./KnowledgeNode";
 import NodeDetailCard from "./NodeDetailCard";
-import type { KnowledgeNode as DBNode } from "@/hooks/useKnowledgeNodes";
+import type { KnowledgeNode as DBNode, NodeEdge } from "@/hooks/useKnowledgeNodes";
 
 interface GraphNode {
   id: string;
@@ -11,11 +11,6 @@ interface GraphNode {
   size: number;
   stage: NodeStage;
   label: string;
-}
-
-interface GraphEdge {
-  from: string;
-  to: string;
 }
 
 // Static positions for known seed nodes
@@ -34,8 +29,8 @@ const staticPositions: Record<string, { x: number; y: number; size: number }> = 
   "a1000000-0000-0000-0000-000000000012": { x: 80, y: 160, size: 7 },
 };
 
-// Static edges between seed nodes
-const seedEdges: GraphEdge[] = [
+// Static fallback edges (for when DB edges are empty)
+const fallbackEdges = [
   { from: "a1000000-0000-0000-0000-000000000001", to: "a1000000-0000-0000-0000-000000000002" },
   { from: "a1000000-0000-0000-0000-000000000001", to: "a1000000-0000-0000-0000-000000000003" },
   { from: "a1000000-0000-0000-0000-000000000001", to: "a1000000-0000-0000-0000-000000000006" },
@@ -49,7 +44,6 @@ const seedEdges: GraphEdge[] = [
 ];
 
 function hashPosition(id: string, index: number): { x: number; y: number } {
-  // Deterministic pseudo-random position from id
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
   const x = 60 + Math.abs(hash % 480);
@@ -61,19 +55,23 @@ interface KnowledgeGraphProps {
   highlightIds?: string[];
   activeStages?: NodeStage[];
   dbNodes?: DBNode[];
+  dbEdges?: NodeEdge[];
 }
 
-const KnowledgeGraph = ({ highlightIds, activeStages = [], dbNodes = [] }: KnowledgeGraphProps) => {
+const KnowledgeGraph = ({ highlightIds, activeStages = [], dbNodes = [], dbEdges = [] }: KnowledgeGraphProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const graphNodes: GraphNode[] = useMemo(() => {
     return dbNodes.map((n, i) => {
       const pos = staticPositions[n.id] || hashPosition(n.id, i);
+      // Size based on impact score
+      const baseSize = staticPositions[n.id]?.size ?? 10;
+      const impactBonus = (n.impact || 0) / 20; // 0-5 bonus based on impact
       return {
         id: n.id,
         x: pos.x,
         y: pos.y,
-        size: staticPositions[n.id]?.size ?? 10,
+        size: baseSize + impactBonus,
         stage: n.stage as NodeStage,
         label: n.label,
       };
@@ -82,11 +80,20 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [], dbNodes = [] }: Knowl
 
   const nodeMap = useMemo(() => Object.fromEntries(graphNodes.map((n) => [n.id, n])), [graphNodes]);
 
-  // Only use edges where both endpoints exist
+  // Use real edges from DB, or fallback to static ones
   const edges = useMemo(() => {
     const nodeIds = new Set(graphNodes.map((n) => n.id));
-    return seedEdges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
-  }, [graphNodes]);
+    
+    if (dbEdges && dbEdges.length > 0) {
+      return dbEdges
+        .filter((e) => nodeIds.has(e.from_node_id) && nodeIds.has(e.to_node_id))
+        .map((e) => ({ from: e.from_node_id, to: e.to_node_id, strength: e.strength }));
+    }
+    
+    return fallbackEdges
+      .filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to))
+      .map((e) => ({ ...e, strength: 50 }));
+  }, [graphNodes, dbEdges]);
 
   const adjacency = useMemo(() => {
     const adj: Record<string, Set<string>> = {};
@@ -115,14 +122,21 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [], dbNodes = [] }: Knowl
     <div className="relative w-full rounded-lg border border-border card-gradient overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-20" />
       <div className="px-6 pt-5 pb-2 relative z-10">
-        <h2 className="text-lg font-semibold text-foreground">Knowledge Network</h2>
-        <p className="text-sm text-muted-foreground">
-          {graphNodes.length === 0
-            ? "Loading nodes from database..."
-            : selectedId
-            ? "Click node to explore — showing related cluster"
-            : "Click any node to explore its evidence and experiments"}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Knowledge Network</h2>
+            <p className="text-sm text-muted-foreground">
+              {graphNodes.length === 0
+                ? "Loading nodes from database..."
+                : selectedId
+                ? "Click node to explore — showing related cluster"
+                : "Click any node to explore its evidence and experiments"}
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {graphNodes.length} nodes · {edges.length} connections
+          </div>
+        </div>
       </div>
       <svg viewBox="0 0 600 450" className="w-full h-auto relative z-10" preserveAspectRatio="xMidYMid meet">
         {edges.map((edge, i) => {
@@ -130,15 +144,16 @@ const KnowledgeGraph = ({ highlightIds, activeStages = [], dbNodes = [] }: Knowl
           const to = nodeMap[edge.to];
           if (!from || !to) return null;
           const isHighlighted = relatedSet ? relatedSet.has(edge.from) && relatedSet.has(edge.to) : true;
+          const strokeWidth = 0.5 + (edge.strength / 100) * 2;
           return (
             <motion.line
-              key={i}
+              key={`${edge.from}-${edge.to}`}
               x1={from.x}
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              stroke={isHighlighted ? "hsl(210, 50%, 40%)" : "hsl(210, 30%, 25%)"}
-              strokeWidth={isHighlighted ? 1.5 : 1}
+              stroke={isHighlighted ? "hsl(var(--primary) / 0.6)" : "hsl(var(--muted-foreground) / 0.2)"}
+              strokeWidth={isHighlighted ? strokeWidth : 0.5}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: isHighlighted ? 0.7 : 0.15 }}
               transition={{ duration: 1, delay: i * 0.08 }}
