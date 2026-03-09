@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Globe, Brain, Zap, Satellite, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
+import { Globe, Brain, Zap, Satellite, BookOpen, Plus, LogIn, LogOut, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -16,9 +16,8 @@ import SubmitNodeModal from "@/components/dashboard/SubmitNodeModal";
 import type { NodeStage } from "@/components/dashboard/KnowledgeNode";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useKnowledgeNodes, useSubmitNode } from "@/hooks/useKnowledgeNodes";
+import { useKnowledgeNodes, useSubmitNode, useNodeEdges, useUserRole } from "@/hooks/useKnowledgeNodes";
 
-// Force clean HMR reload
 const Index = () => {
   const [searchMatchIds, setSearchMatchIds] = useState<string[]>([]);
   const [activeStages, setActiveStages] = useState<NodeStage[]>([]);
@@ -26,6 +25,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: nodes = [] } = useKnowledgeNodes();
+  const { data: edges = [] } = useNodeEdges();
+  const { data: role } = useUserRole(user?.id);
   const submitNode = useSubmitNode();
 
   const handleFilter = useCallback((ids: string[]) => {
